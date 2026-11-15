@@ -7,6 +7,8 @@ This repository trains a scikit-learn Random Forest to estimate nightly short-te
 - **W&B project:** https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb
 - **Source repository platform:** GitHub
 - **Source repository:** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price
+- **Release 1.0.0:** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.0
+- **Release 1.0.1:** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.1
 
 The `nyc_airbnb` project is public (`USER_READ`). Reviewers can open the artifact lineage from `random_forest_export:prod`.
 
@@ -28,7 +30,7 @@ Artifact lineage for that export:
 
 `sample.csv` (download) → `clean_sample.csv` (basic_cleaning) → `trainval_data.csv` (train_val_test_split) → `random_forest_export:prod` (train_random_forest)
 
-`clean_sample.csv:reference` is the cleaned sample from the first release and is what `data_check` compares against. Release 1.0.0 does not drop listings outside the NYC bounding box. Running that tag on `sample2.csv` failed in `test_proper_boundaries` with `assert np.int64(1) == 0`: one price-valid listing sat outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]. The other five data tests passed. Release 1.0.1 drops those out-of-bounds rows in `basic_cleaning` before the tests run.
+`clean_sample.csv:reference` is the cleaned sample from the first release and is what `data_check` compares against. Release 1.0.0 does not drop listings outside the NYC bounding box. Running that tag on `sample2.csv` failed in `test_proper_boundaries` with `assert np.int64(1) == 0`: one price-valid listing sat outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]. The other five data tests passed. Release 1.0.1 drops those out-of-bounds rows in `basic_cleaning` before the tests run. Re-running tag 1.0.1 on `sample2.csv` passed all six data tests, dropped that one row, and trained a new export, `random_forest_export:v16`, with validation MAE 31.90. The `prod` alias stays on `v12`, the sample1 model selected by validation MAE.
 
 ## Local Mac setup
 
