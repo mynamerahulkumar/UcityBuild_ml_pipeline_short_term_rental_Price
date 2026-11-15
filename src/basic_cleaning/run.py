@@ -36,6 +36,13 @@ def go(args):
     logger.info("Converting last_review from text to datetime")
     df["last_review"] = pd.to_datetime(df["last_review"])
 
+    idx = df["longitude"].between(-74.25, -73.50) & df["latitude"].between(40.5, 41.2)
+    logger.info(
+        "Filtering listings to the NYC bounding box; dropping %s rows outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]",
+        int((~idx).sum()),
+    )
+    df = df[idx].copy()
+
     logger.info("Saving cleaned data to clean_sample.csv (%s rows)", df.shape[0])
     df.to_csv("clean_sample.csv", index=False)
 

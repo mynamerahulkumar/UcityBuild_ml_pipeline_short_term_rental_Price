@@ -64,7 +64,7 @@ def go(config: DictConfig):
                     "input_artifact": "sample.csv:latest",
                     "output_artifact": "clean_sample.csv",
                     "output_type": "clean_sample",
-                    "output_description": "Price outliers filtered and last_review converted; missing values retained",
+                    "output_description": "Price outliers and non-NYC coordinates removed; last_review converted; missing values retained",
                     "min_price": config["etl"]["min_price"],
                     "max_price": config["etl"]["max_price"],
                 },

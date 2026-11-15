@@ -28,7 +28,7 @@ Artifact lineage for that export:
 
 `sample.csv` (download) → `clean_sample.csv` (basic_cleaning) → `trainval_data.csv` (train_val_test_split) → `random_forest_export:prod` (train_random_forest)
 
-`clean_sample.csv:reference` is the same cleaned version used by `data_check`. Release 1.0.0 does not yet drop listings outside the NYC bounding box. That filter is release 1.0.1, after `sample2.csv` fails `test_proper_boundaries`.
+`clean_sample.csv:reference` is the cleaned sample from the first release and is what `data_check` compares against. Release 1.0.0 does not drop listings outside the NYC bounding box. Running that tag on `sample2.csv` failed in `test_proper_boundaries` with `assert np.int64(1) == 0`: one price-valid listing sat outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]. The other five data tests passed. Release 1.0.1 drops those out-of-bounds rows in `basic_cleaning` before the tests run.
 
 ## Local Mac setup
 
@@ -61,7 +61,7 @@ mlflow run . -P steps=test_regression_model
 
 ## Later pipeline changes
 
-Later releases could add a stronger text model than the small TF-IDF on the listing name, try gradient boosting beside the random forest, and track weekly data drift with the existing KL check on `neighbourhood_group`. Those are not in 1.0.0. The immediate next change is the geographic filter in 1.0.1.
+Later releases could add a stronger text model than the small TF-IDF on the listing name, try gradient boosting beside the random forest, and track weekly data drift with the existing KL check on `neighbourhood_group`. Release 1.0.1 only adds the geographic boundary filter.
 
 ## Course instructions
 
