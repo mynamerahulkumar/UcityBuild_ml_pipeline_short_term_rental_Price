@@ -1,19 +1,51 @@
+# Required by docs/project_requirements.md. Submission files stay tracked:
+# EDA.ipynb, components/get_data/data/sample1.csv, sample2.csv, source, and config.
+
+# Secrets and API keys
 .env
+.env.*
+!.env.example
+.netrc
+
+# Local virtual environments
 .venv/
 venv/
+.conda/
+
+# Python caches
 __pycache__/
 *.pyc
-.pytest_cache/
+*.py[cod]
+*$py.class
 *.egg-info/
-src/basic_cleaning/clean_sample.csv
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
 .ipynb_checkpoints/
+
+# macOS
 .DS_Store
+
+# MLflow and Weights & Biases local stores
 mlruns/
+mlartifacts/
 wandb/
 *.log
+
+# Hydra run directories
 outputs/
 multirun/
+.hydra/
+
+# Generated datasets, profiles, and model exports.
+# Datasets live in W&B. sample1.csv and sample2.csv are source data and stay tracked.
 artifacts/
+clean_sample.csv
 eda_profile_raw.html
 eda_profile_clean.html
 rf_config.json
