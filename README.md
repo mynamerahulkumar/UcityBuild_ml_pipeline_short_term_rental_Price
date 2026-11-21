@@ -10,7 +10,16 @@ This repository trains a scikit-learn Random Forest to estimate nightly short-te
 - **Release 1.0.0:** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.0
 - **Release 1.0.1:** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.1
 
-The `nyc_airbnb` project is public (`USER_READ`). Reviewers can open the artifact lineage from `random_forest_export:prod`.
+The `nyc_airbnb` project is public (`USER_READ`). The pages below open the aliases, the split, the test score, and the release runs.
+
+- **`reference` alias:** [clean_sample.csv v0](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/artifacts/clean_sample/clean_sample.csv/v0) carries both `reference` and `latest`. It is the in-bounds sample1 clean (19,001 rows). `data_check` on 22 Nov 2026 passed all six tests against that version ([run 214g6keg](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/214g6keg)).
+- **`prod` alias:** [random_forest_export v12](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/artifacts/model_export/random_forest_export/v12) is the sample1 model with the lowest validation MAE. The alias `prod` is on `v12`, logged by [run zyzw136a](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/zyzw136a). Later versions, including `:latest`, are not the selected model.
+- **Lineage:** [random_forest_export v12 lineage](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/artifacts/model_export/random_forest_export/v12). The chain is `sample.csv` → `clean_sample.csv` → `trainval_data.csv` → `random_forest_export:prod`.
+- **Split:** [run otuh2lz2](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/otuh2lz2) (`train_val_test_split`) wrote [trainval_data.csv v4](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/artifacts/trainval_data/trainval_data.csv/v4) (15,200 rows, 80%) and [test_data.csv v4](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/artifacts/test_data/test_data.csv/v4) (3,801 rows, 20%) from the 19,001-row clean sample. `test_size` is 0.2.
+- **Loadable prod model and test MAE:** `mlflow.sklearn.load_model` loads `random_forest_export:prod` as a scikit-learn `Pipeline` with steps `preprocessor` and `random_forest`. The non-ordinal branch is `SimpleImputer(strategy="most_frequent")` then `OneHotEncoder`. [Run a0crvn82](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/a0crvn82) scored that model on `test_data.csv:latest` and logged test MAE **33.29** (r2 0.581). Validation MAE for `v12` is **33.80**.
+- **More than two hyperparameter runs:** [zyzw136a](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/zyzw136a) (`max_tfidf_features=30`, `max_features=0.33`, validation MAE 33.80), [ud3ajhxd](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/ud3ajhxd) (`10`, `0.33`, MAE 33.87), and [xxc3f68q](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/xxc3f68q) (`30`, `0.1`, MAE 36.04). The full grid is in the table below.
+- **Release 1.0.0 on sample2.csv:** [run 0o3tdnpk](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/0o3tdnpk) is the data-test run from tag `1.0.0` on 22 Nov 2026. `test_proper_boundaries` failed with `assert np.int64(1) == 0`. The other five tests passed. Cleaning for that tag does not drop out-of-bounds coordinates ([run espaauo6](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/espaauo6)).
+- **Release 1.0.1 on sample2.csv:** [run 163tjnrw](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/163tjnrw) passed all six data tests. The geo filter dropped the one out-of-bounds row. [Run 8c120q11](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/8c120q11) trained a new export, `random_forest_export:v25`, with validation MAE 31.90. `prod` stays on `v12`.
 
 ## Results used for release 1.0.0
 
@@ -24,13 +33,13 @@ Hydra trained 15 forests (`max_tfidf_features` in 10, 15, 30 and `random_forest.
 | 30 | 0.75 | 33.91 |
 | 15 | 0.33 | 33.92 |
 
-The selected defaults in `config.yaml` are `max_tfidf_features: 30` and `random_forest.max_features: 0.33` (W&B run `zyzw136a`, artifact `random_forest_export:v12`, alias `prod`). Held-out test MAE from `test_regression_model` is **33.29**. Validation and test error are within about half a dollar, so the model is not overfitting the validation split.
+The selected defaults in `config.yaml` are `max_tfidf_features: 30` and `random_forest.max_features: 0.33` (W&B run `zyzw136a`, artifact `random_forest_export:v12`, alias `prod`). Held-out test MAE from `test_regression_model` run `a0crvn82` is **33.29**. Validation and test error are within about half a dollar, so the model is not overfitting the validation split.
 
 Artifact lineage for that export:
 
 `sample.csv` (download) → `clean_sample.csv` (basic_cleaning) → `trainval_data.csv` (train_val_test_split) → `random_forest_export:prod` (train_random_forest)
 
-`clean_sample.csv:reference` is the cleaned sample from the first release and is what `data_check` compares against. Release 1.0.0 does not drop listings outside the NYC bounding box. Running that tag on `sample2.csv` failed in `test_proper_boundaries` with `assert np.int64(1) == 0`: one price-valid listing sat outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]. The other five data tests passed. Release 1.0.1 drops those out-of-bounds rows in `basic_cleaning` before the tests run. Re-running tag 1.0.1 on `sample2.csv` passed all six data tests, dropped that one row, and trained a new export, `random_forest_export:v16`, with validation MAE 31.90. The `prod` alias stays on `v12`, the sample1 model selected by validation MAE.
+`clean_sample.csv:v0` carries `reference` and `latest`. It is the cleaned sample1 file `data_check` compares against. Release 1.0.0 does not drop listings outside the NYC bounding box. Running that tag on `sample2.csv` fails in `test_proper_boundaries` with `assert np.int64(1) == 0`: one price-valid listing sits outside longitude [-74.25, -73.50] and latitude [40.5, 41.2]. The other five data tests pass. Release 1.0.1 drops those out-of-bounds rows in `basic_cleaning` before the tests run. The 22 Nov 2026 re-run of tag 1.0.1 on `sample2.csv` passed all six data tests, dropped that one row, and trained `random_forest_export:v25` with validation MAE 31.90. An earlier sample2 export was `v16` with the same MAE. The `prod` alias stays on `v12`, the sample1 model selected by validation MAE.
 
 ## Local Mac setup
 
