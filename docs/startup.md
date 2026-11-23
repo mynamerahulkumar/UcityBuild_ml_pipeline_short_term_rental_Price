@@ -20,7 +20,17 @@ This is the only CLI for pipeline commands. Do not type them into the Jupyter te
 - **Runs** is the table of jobs. Open a run, then use the tabs **Overview** (summary numbers such as `mae`), **Charts**, **Logs**, and **Files**.
 - **Artifacts** is the stored files and the model. Open a version, then use **Overview**, **Files**, **Lineage**, and the **Aliases** section.
 
-**Browser, GitHub.** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price and the Releases page for tags `1.0.0` and `1.0.1`.
+**Browser, GitHub.** https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price. The branch is `main`. On the repository home, the right side has **Releases**. Open it to see tags `1.0.0` and `1.0.1`. Inside one release, the tag name, the commit hash, and the release notes are at the top of the page.
+
+**Git, in the same Terminal.** Run `git status`, `git add`, `git commit`, `git tag -a`, and `git push` from the repository root. The remote is `origin`. The branch is `main`. Do not commit `.env`. Do not run `git tag -f` on `1.0.0` or `1.0.1`.
+
+Commits land on `main` as each rubric file is finished. The release tags come only after that, in steps 14 and 16.
+
+1. After the notebook is saved: commit `EDA.ipynb` and `notes.md`.
+2. After cleaning and the tests: commit `src/basic_cleaning/` and `src/data_check/`.
+3. After training is wired: commit `src/train_random_forest/run.py` and the training block in `main.py`.
+4. After the sweep: commit `config.yaml` with `max_tfidf_features: 30` and `max_features: 0.33`. Tag `1.0.0` points at that commit, `dfd430d`, which does not yet drop out-of-bounds coordinates.
+5. After the geographic filter: commit `src/basic_cleaning/run.py`. Tag `1.0.1` points at that commit, `fb06810`.
 
 **JupyterLab.** Opened only by `scripts/run_eda.sh`. Choose the `eda` kernel, not the system Python.
 
@@ -276,11 +286,43 @@ sample.csv → clean_sample.csv → trainval_data.csv → random_forest_export
 
 The version on that page is `v12` and the alias chip is `prod`.
 
-## 14. Release 1.0.0 on sample2.csv
+## 14. Git tag and GitHub Release 1.0.0
+
+Rubric: commit the code and `config.yaml` with the lowest-validation-MAE defaults, then create a GitHub Release and a matching Git tag named `1.0.0`.
+
+**Where:** Terminal, repository root, then GitHub in the browser. This tag already exists. Do not create it again.
+
+**Verify** with git:
+
+```bash
+git status
+git rev-parse --short 1.0.0
+git show -s --format='%D%n%s' 1.0.0
+```
+
+`git rev-parse` prints `dfd430d`. `git status` should not list `.env`. The tag message is `Initial ML pipeline release`.
+
+The commands that created it, after [config.yaml](../config.yaml) held `max_tfidf_features: 30` and `max_features: 0.33`, and before the geographic filter existed in [src/basic_cleaning/run.py](../src/basic_cleaning/run.py):
+
+```bash
+git add README.md EDA.ipynb notes.md config.yaml main.py MLproject conda.yml environment.yml components src .gitignore
+git commit -m "Complete the NYC rental pipeline for release 1.0.0."
+git tag -a 1.0.0 -m "Initial ML pipeline release"
+git push origin main
+git push origin 1.0.0
+```
+
+`git add` must not include `.env`, `mlruns/`, `wandb/`, `outputs/`, or `multirun/`. `.gitignore` already excludes them. `sample1.csv` and `sample2.csv` under `components/get_data/data/` stay tracked.
+
+**GitHub:** open the repository, click **Releases** on the right side of the home page, then open **1.0.0**. The page shows tag `1.0.0` and commit `dfd430d`. That release was published from the tag after `git push origin 1.0.0`. The click path for a first-time release is **Releases → Draft a new release → Choose a tag → 1.0.0 → Publish release**.
+
+https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.0
+
+## 15. Release 1.0.0 on sample2.csv
 
 Rubric: running the released pipeline on `sample2.csv` fails because of a data problem.
 
-**Where:** GitHub in the browser, and the W&B Runs page. Do not run the tag again.
+**Where:** GitHub in the browser, and the W&B Runs page. Do not run the tag again. The tag to run is the one from step 14, not the current `main` branch.
 
 **Verify:** open the GitHub release `1.0.0`:
 
@@ -305,17 +347,47 @@ The Terminal log shows `FAILED test_data.py::test_proper_boundaries` and `assert
 - Data tests: [0o3tdnpk](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/0o3tdnpk), Job Type `data_tests`. Click **Logs**.
 - Cleaning: [espaauo6](https://wandb.ai/dharacoding-dhara-coding/nyc_airbnb/runs/espaauo6). This tag does not drop the out-of-bounds row, so training never starts.
 
-## 15. Release 1.0.1 on sample2.csv
+## 16. Git tag and GitHub Release 1.0.1
+
+Rubric: commit the geographic filter, push it, and create a new release whose tag increments the patch number, such as `1.0.1`.
+
+**Where:** Terminal, repository root, then GitHub in the browser. This tag already exists. Do not create it again, and do not move `1.0.0`.
+
+**Verify** with git:
+
+```bash
+git rev-parse --short 1.0.1
+git show -s --format='%D%n%s' 1.0.1
+git diff --stat 1.0.0 1.0.1 -- src/basic_cleaning/run.py
+```
+
+`git rev-parse` prints `fb06810`. The tag message is `Add geographical boundary cleaning`. The diff of `src/basic_cleaning/run.py` between the two tags is the longitude and latitude filter. `config.yaml` hyperparameters are the same on both tags.
+
+The commands that created it, after that filter was saved and committed:
+
+```bash
+git add src/basic_cleaning/run.py
+git commit -m "Add NYC geographical boundary filtering."
+git tag -a 1.0.1 -m "Add geographical boundary cleaning"
+git push origin main
+git push origin 1.0.1
+```
+
+**GitHub:** **Releases → 1.0.1**. The page shows tag `1.0.1` and commit `fb06810`. The first-time click path is **Releases → Draft a new release → Choose a tag → 1.0.1 → Publish release**.
+
+https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.1
+
+## 17. Release 1.0.1 on sample2.csv
 
 Rubric: after the geographic filter, the new release trains a new model. Do not create another tag.
 
-**Where:** GitHub in the browser, and the W&B Runs and Artifacts pages. Do not run the tag again.
+**Where:** GitHub in the browser, and the W&B Runs and Artifacts pages. Do not run the tag again. The command uses `-v 1.0.1`, which is the tag from step 16.
 
 **Verify:** open the GitHub release `1.0.1`:
 
 https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price/releases/tag/1.0.1
 
-The command that was used is the same as step 14 with `-v 1.0.1`:
+The command that was used is the same as step 15 with `-v 1.0.1`:
 
 ```bash
 mlflow run https://github.com/mynamerahulkumar/UcityBuild_ml_pipeline_short_term_rental_Price.git \

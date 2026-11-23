@@ -229,15 +229,30 @@ That is 15 forests, plus the original default run. More than two finished runs w
 
 **Where missing values are filled.** Cleaning and the notebook leave missing values in the CSV. The saved pipeline fills `neighbourhood_group` with the most frequent value and then one-hot encodes it. Because that imputer is inside `sk_pipe`, `load_model` applies the same rule at test time.
 
-## Release pipeline
+## Git and the release pipeline
 
-A release is an annotated Git tag plus a GitHub Release. `mlflow run` of the tag clones that commit from GitHub and runs the default steps there. The working tree on your machine is not what that command executes.
+Source control is Git, and the remote is GitHub. The branch reviewers see is `main`. A release is an annotated tag on one commit, pushed to GitHub, plus a GitHub Release that points at that same tag. `mlflow run ... -v 1.0.0` clones that tag. It does not run whatever happens to be in the working tree.
 
-**Tag `1.0.0`.** Commit `dfd430d`. [config.yaml](../config.yaml) on that commit already has the winning hyperparameters. [src/basic_cleaning/run.py](../src/basic_cleaning/run.py) on that commit filters price and converts `last_review`. It does not drop coordinates outside the NYC box. Running it with `etl.sample='sample2.csv'` uploads a cleaned file of 46,428 price-valid rows. `test_proper_boundaries` then fails: `assert np.int64(1) == 0`. One row is outside the box. The other five tests pass. Training does not start. The data-test run is `0o3tdnpk`. The cleaning run `espaauo6` is the one that kept the out-of-bounds row.
+`.gitignore` keeps secrets and generated files off those commits. Do not commit `.env`, `.netrc`, `mlruns/`, `wandb/`, `outputs/`, `multirun/`, `__pycache__/`, `clean_sample.csv`, or `random_forest_dir/`. Do commit `EDA.ipynb`, `config.yaml`, `components/get_data/data/sample1.csv`, and `sample2.csv`.
 
-**Tag `1.0.1`.** Commit `fb06810`. The same cleaning script, with the bounding-box filter added immediately before `to_csv`. The same `sample2.csv` command drops that one row, passes all six tests (run `163tjnrw`), and trains a new export. Run `8c120q11` logged `random_forest_export:v25` with validation MAE **31.90**. An earlier sample2 export, v16, had the same MAE. `prod` stays on v12, because v25 was trained on sample2 after the sample1 search had already chosen the production model.
+The git sequence follows the rubric. Tags `1.0.0` and `1.0.1` already exist. Do not move them with `git tag -f`, and do not delete them.
 
-The file that changes between the tags is [src/basic_cleaning/run.py](../src/basic_cleaning/run.py). The hyperparameter defaults in `config.yaml` stay `max_tfidf_features: 30` and `max_features: 0.33`.
+1. Commit the finished pipeline on `main` as the work lands: the notebook, `src/basic_cleaning`, `src/data_check`, the training script, and [config.yaml](../config.yaml) after the sweep. The winning defaults (`max_tfidf_features: 30`, `max_features: 0.33`) must be in that file before the first release tag.
+2. The commit for release `1.0.0` is `dfd430d` ("Complete the NYC rental pipeline for release 1.0.0."). [src/basic_cleaning/run.py](../src/basic_cleaning/run.py) on that commit filters price and converts `last_review`. It does not drop coordinates outside the NYC box.
+3. An annotated tag marks that commit: `git tag -a 1.0.0` with the message `Initial ML pipeline release`. `git push origin main` and `git push origin 1.0.0` publish the branch and the tag. On GitHub, **Releases → 1.0.0** is that tag.
+4. `mlflow run` of tag `1.0.0` with `etl.sample='sample2.csv'` uploads a cleaned file of 46,428 price-valid rows. `test_proper_boundaries` then fails: `assert np.int64(1) == 0`. One row is outside the box. The other five tests pass. Training does not start. The data-test run is `0o3tdnpk`. The cleaning run `espaauo6` is the one that kept the out-of-bounds row.
+5. The next commit adds the bounding-box filter in [src/basic_cleaning/run.py](../src/basic_cleaning/run.py), immediately before `to_csv`. That commit is `fb06810` ("Add NYC geographical boundary filtering."). The hyperparameter defaults in `config.yaml` stay the same.
+6. An annotated tag marks that commit: `git tag -a 1.0.1` with the message `Add geographical boundary cleaning`. Push `main` and push the tag `1.0.1`. On GitHub, **Releases → 1.0.1** is that tag. The patch number goes from `1.0.0` to `1.0.1`. No later tag replaces either one.
+7. `mlflow run` of tag `1.0.1` with the same `sample2.csv` override drops that one row, passes all six tests (run `163tjnrw`), and trains a new export. Run `8c120q11` logged `random_forest_export:v25` with validation MAE **31.90**. An earlier sample2 export, v16, had the same MAE. `prod` stays on v12, because v25 was trained on sample2 after the sample1 search had already chosen the production model.
+
+Confirm the tags from the repository root:
+
+```bash
+git rev-parse --short 1.0.0    # dfd430d
+git rev-parse --short 1.0.1    # fb06810
+git show -s --format='%D %s' 1.0.0
+git show -s --format='%D %s' 1.0.1
+```
 
 ## Files the rubric checks
 
@@ -255,4 +270,4 @@ A reviewer opens these files in the GitHub repository, and the W&B pages named w
 - **prod alias.** Not a file. On W&B, `random_forest_export` version v12 carries the alias `prod`.
 - **Test MAE.** The `test_regression_model` block in [main.py](../main.py) and [components/test_regression_model/run.py](../components/test_regression_model/run.py).
 - **Lineage.** The Lineage tab on `random_forest_export` version v12. The graph is built because each step calls `use_artifact` on the file it consumes.
-- **Releases.** Git tags `1.0.0` and `1.0.1`, and the matching GitHub Releases. The code difference is the geographic filter in [src/basic_cleaning/run.py](../src/basic_cleaning/run.py). `components/get_data/data/sample2.csv` is the new sample those tags are run on.
+- **Releases.** Annotated Git tag `1.0.0` on commit `dfd430d`, and annotated Git tag `1.0.1` on commit `fb06810`, both pushed to `origin` and published as GitHub Releases. The code difference is the geographic filter in [src/basic_cleaning/run.py](../src/basic_cleaning/run.py). `components/get_data/data/sample2.csv` is the new sample those tags are run on. `.gitignore` is what keeps `.env` and local run folders out of those commits.
